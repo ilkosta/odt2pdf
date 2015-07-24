@@ -1,0 +1,9 @@
+[package]
+name = "shatest"
+version = "0.1.0"
+authors = ["ilkosta <costantino.giuliodori@gmail.com>"]
+
+
+[dependencies]
+crc = "^1.0.0"
+rust-crypto = "*"
