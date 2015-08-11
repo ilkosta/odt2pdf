@@ -4,13 +4,11 @@ extern crate iron;
 extern crate router;
 extern crate params;
 extern crate hyper;
-extern crate logger;
 
 
 use iron::prelude::*;
 use router::{Router};
 use iron::status;
-use logger::Logger;
 use iron::{BeforeMiddleware};
 
 
@@ -41,9 +39,7 @@ mod param_rules;
 
 use param_rules::RequiredParam;
 
-require_param!(RequireMd5sumParam, "md5sum", String);
-require_param!(RequirePippoParam, "pippo", String);
-require_param!(RequireFileParam, "filename", params::File);
+
 
 
 fn submit_form_file(req: &mut Request) -> IronResult<Response> {
@@ -72,18 +68,22 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
   }
 }
 
+require_param!(RequireMd5sumParam, "md5sum", String);
+require_param!(RequireFileParam, "filename", params::File);
+
+mod logger;
+
+use logger::Logger;
+use iron::{AroundMiddleware};
 fn start_server() {
-   let (logger_before, logger_after) = Logger::new(None);
    let mut router = Router::new();
    let mut chain_form_file = Chain::new(submit_form_file);
-   chain_form_file.link_before(logger_before);
 
    chain_form_file.link_before(RequireMd5sumParam);
-   chain_form_file.link_before(RequirePippoParam);
    chain_form_file.link_before(RequireFileParam);
 
-   chain_form_file.link_after(logger_after);
-   router.post("/openact", chain_form_file);
+   router.post("/openact", Logger::default().around(Box::new(chain_form_file)));
+
    println!("started server at http://localhost:3000/");
    Iron::new(router).http("localhost:3000").unwrap();
 }
