@@ -132,55 +132,6 @@ fn start_server() {
 }
 
 
-#[cfg(test)]
-mod tests {
-
-    use std::fs::File;
-    use super::md5sum;
-
-#[test]
-    fn md5sum_of_file() {
-        static FP : &'static str = "/home/costa/pkg/lav/regione/attiweb/attività/20150107/definizione procedura di riavvio/Procedure_Riavvio_omnia.odt";
-
-        let mut odt = match File::open(FP) {
-            Err(why) => panic!("Cannot open the test file: {}", why),
-            Ok(file) => file,
-        };
-
-        assert_eq!(md5sum(&mut odt), "a381cbe043c38a94af0983ffa934f338");
-    }
-
-    #[test]
-    fn simple_get() {
-        use hyper::Client;
-        use hyper::header::Connection;
-        use std::io::Read;
-        use super::start_server;
-
-        // start_server();
-
-        // Create a client.
-        let client = Client::new();
-        //
-        // Creating an outgoing request.
-        let mut res = client.get("http://localhost:3000/openact")
-            // set a header
-            .header(Connection::close())
-            // let 'er go!
-            .send().unwrap();
-
-        // Read the Response.
-        let mut body = String::new();
-        res.read_to_string(&mut body).unwrap();
-
-        println!("Response: {}", body);
-        assert_eq!(body, "Hello World");
-    }
-
-}
-
-
-
 fn main() {
     println!("Hello, world!");
     start_server();
