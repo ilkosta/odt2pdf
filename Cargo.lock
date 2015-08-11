@@ -4,7 +4,6 @@ version = "0.1.0"
 dependencies = [
  "crc 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "formdata 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hyper 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "iron 0.1.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "params 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "router 0.0.10 (registry+https://github.com/rust-lang/crates.io-index)",

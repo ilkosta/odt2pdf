@@ -2,7 +2,6 @@
 extern crate iron;
 extern crate router;
 extern crate params;
-extern crate hyper;
 
 
 use std::process::Command;
