@@ -1,10 +1,13 @@
 ﻿
-extern crate crypto;
 extern crate iron;
 extern crate router;
 extern crate params;
 extern crate hyper;
+extern crate staticfile;
 
+use std::process::Command;
+use staticfile::Static;
+use std::path::Path;
 
 use iron::prelude::*;
 use router::{Router};
@@ -12,25 +15,9 @@ use iron::status;
 use iron::{BeforeMiddleware};
 
 
-/// generate the md5sum of a given file (io::Read)
-pub fn md5sum<T : std::io::Read> (f: &mut T) -> String  {
-  use crypto::digest::Digest;
+mod md5sum;
 
-  let mut digest = crypto::md5::Md5::new();
-  let mut data: Vec<u8> = Vec::new();
-
-  match f.read_to_end(&mut data) {
-    Err(why) => { println!("Error reading the passed file to calculate the md5sum: {}", why); String::new() }
-    Ok(size) => {
-      if size > 0 {
-        digest.input(&data);
-        digest.result_str()    
-      } else {
-        String::new()
-      }
-    }
-  }  
-}
+use md5sum::md5sum;
 
 
 #[macro_use]
@@ -38,7 +25,7 @@ mod param_rules;
 
 
 use param_rules::RequiredParam;
-use std::process::Command;
+use iron::middleware::Handler;
 
 fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
@@ -48,13 +35,33 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
   let file_param = params::File::get_param_value(req, "filename").unwrap();
 
   let file_path = format!("{}.ods" , file_param.path().display());
+
+  macro_rules! status_from_io_err {
+    ($why:expr) => (
+
+      match $why.kind() {
+        std::io::ErrorKind::NotFound => status::NotFound,
+        std::io::ErrorKind::PermissionDenied => status::Forbidden,
+        _ => status::InternalServerError,
+      }
+
+    )
+  }
+
+
   match rename(&file_param.path(), &file_path) {
-    Err(why) => Ok(Response::with((status::PreconditionRequired, format!("failed to elaborate the received file: {}", why)))),
+    Err(why) => {
+      let status = status_from_io_err!(why);
+      Ok(Response::with((status, format!("failed to elaborate the received file: {}", why))))
+    },
     Ok(_) => {
       println!("elaborating the file {}", file_path);
 
       match File::open(&file_path) {
-        Err(why) => Ok(Response::with((status::PreconditionRequired, format!("failed to opening the received file: {}", why)))),
+        Err(why) => {
+          let status = status_from_io_err!(why);
+          Ok(Response::with((status, format!("failed to opening the received file: {}", why))))
+        },
         Ok(ref mut file) => {
           let calculated_md5sum = &md5sum(file);
           if calculated_md5sum != passed_md5sum {
@@ -93,7 +100,9 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
           println!("process exited with: {}", res);
 
-          Ok(Response::with((status::Ok, "ok")))
+          let ref file_path = format!("{}.pdf" , file_param.path().display());
+          println!("file_path: {}", file_path);
+          Static::new(Path::new(file_path)).handle(req)
         }
       }
     }
