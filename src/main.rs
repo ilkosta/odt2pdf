@@ -38,34 +38,69 @@ mod param_rules;
 
 
 use param_rules::RequiredParam;
-
-
-
+use std::process::Command;
 
 fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
+  use std::fs::{rename,File};
+
   let passed_md5sum = &String::get_param_value(req, "md5sum").unwrap();
   let file_param = params::File::get_param_value(req, "filename").unwrap();
-  let file_path = file_param.path().display();
-  match file_param.open() {
-    Err(why) => {
-      let msg = format!("cannot open the uploaded file '{:?}' in path '{}' : '{}'", file_param.filename(), file_path, why);
-      println!("{}", msg);
-      Ok(Response::with((status::InternalServerError, msg)))
-    },
-    Ok(ref mut file) => {
-      let calculated_md5sum = &md5sum(file);
-      if calculated_md5sum != passed_md5sum {
-        let msg = format!(
-          "the md5sum '{}' calculate for the file {} doesn't correspond to the parameter '{}'",
-          calculated_md5sum, file_path, passed_md5sum
-        );
-        return Ok(Response::with((status::PreconditionRequired, msg)))
-      }
 
-      return Ok(Response::with((status::Ok, "ciao mondo")))
+  let file_path = format!("{}.ods" , file_param.path().display());
+  match rename(&file_param.path(), &file_path) {
+    Err(why) => Ok(Response::with((status::PreconditionRequired, format!("failed to elaborate the received file: {}", why)))),
+    Ok(_) => {
+      println!("elaborating the file {}", file_path);
+
+      match File::open(&file_path) {
+        Err(why) => Ok(Response::with((status::PreconditionRequired, format!("failed to opening the received file: {}", why)))),
+        Ok(ref mut file) => {
+          let calculated_md5sum = &md5sum(file);
+          if calculated_md5sum != passed_md5sum {
+            let msg = format!(
+              "the md5sum '{}' calculate for the file {} doesn't correspond to the parameter '{}'",
+              calculated_md5sum, file_path, passed_md5sum
+            );
+            return Ok(Response::with((status::PreconditionRequired, msg)))
+          }
+
+          // it seems good
+          let res = Command::new("timeout")
+          .arg("--kill-after")
+          .arg("10s")
+          .arg("1m")
+
+          // ----------------------- time it
+          .arg("time")
+          .arg("-v")
+          .arg("-a")
+          .arg("-o")
+          .arg(format!("{}",file_param.path().parent().unwrap().join("time.log").display()))
+
+          // ----------------------- convert
+          .arg("libreoffice")
+          .arg("--headless")
+          .arg("--convert-to")
+          .arg("pdf:writer_pdf_Export")
+          .arg("--outdir")
+          .arg(format!("{}",file_param.path().parent().unwrap().display()))
+          .arg(file_path)
+          .status().unwrap_or_else(|e| {
+            println!("failed to execute process: {}", e);
+            panic!("failed to execute process: {}", e);
+          });
+
+          println!("process exited with: {}", res);
+
+          Ok(Response::with((status::Ok, "ok")))
+        }
+      }
     }
   }
+
+
+
 }
 
 require_param!(RequireMd5sumParam, "md5sum", String);
