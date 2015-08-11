@@ -3,10 +3,9 @@ extern crate iron;
 extern crate router;
 extern crate params;
 extern crate hyper;
-extern crate staticfile;
+
 
 use std::process::Command;
-use staticfile::Static;
 use std::path::Path;
 
 use iron::prelude::*;
@@ -25,7 +24,7 @@ mod param_rules;
 
 
 use param_rules::RequiredParam;
-use iron::middleware::Handler;
+
 
 fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
@@ -102,7 +101,7 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
           let ref file_path = format!("{}.pdf" , file_param.path().display());
           println!("file_path: {}", file_path);
-          Static::new(Path::new(file_path)).handle(req)
+          Ok(Response::with((status::Ok, Path::new(file_path))))
         }
       }
     }
