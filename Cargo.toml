@@ -4,6 +4,7 @@ name = "shatest"
 version = "0.1.0"
 
 [dependencies]
+config = "*"
 crc = "^1.0.0"
 formdata = "*"
 iron = "*"

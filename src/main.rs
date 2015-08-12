@@ -2,7 +2,7 @@
 extern crate iron;
 extern crate router;
 extern crate params;
-
+extern crate config;
 
 use std::process::Command;
 use std::path::Path;
@@ -18,33 +18,35 @@ mod md5sum;
 use md5sum::md5sum;
 
 
-#[macro_use]
-mod param_rules;
-
-
 use param_rules::RequiredParam;
 
 
+macro_rules! status_from_io_err {
+  ($why:expr) => (
+
+    match $why.kind() {
+      std::io::ErrorKind::NotFound => status::NotFound,
+      std::io::ErrorKind::PermissionDenied => status::Forbidden,
+      _ => status::InternalServerError,
+    }
+
+  )
+}
+
+use config::reader::from_file;
+use config::reader::from_str;
+// use config::error::ConfigErrorKind;
 fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
   use std::fs::{rename,File};
 
+  // thanks to BeforeMiddleware rules we can do unwrap safely
   let passed_md5sum = &String::get_param_value(req, "md5sum").unwrap();
   let file_param = params::File::get_param_value(req, "filename").unwrap();
 
   let file_path = format!("{}.ods" , file_param.path().display());
 
-  macro_rules! status_from_io_err {
-    ($why:expr) => (
 
-      match $why.kind() {
-        std::io::ErrorKind::NotFound => status::NotFound,
-        std::io::ErrorKind::PermissionDenied => status::Forbidden,
-        _ => status::InternalServerError,
-      }
-
-    )
-  }
 
 
   match rename(&file_param.path(), &file_path) {
@@ -70,45 +72,78 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
             return Ok(Response::with((status::PreconditionRequired, msg)))
           }
 
-          // it seems good
-          let res = Command::new("timeout")
-          .arg("--kill-after")
-          .arg("10s")
-          .arg("1m")
 
-          // ----------------------- time it
-          .arg("time")
-          .arg("-v")
-          .arg("-a")
-          .arg("-o")
-          .arg(format!("{}",file_param.path().parent().unwrap().join("time.log").display()))
+          let config_fname = "./conversion.conf";
 
-          // ----------------------- convert
-          .arg("libreoffice")
-          .arg("--headless")
-          .arg("--convert-to")
-          .arg("pdf:writer_pdf_Export")
-          .arg("--outdir")
-          .arg(format!("{}",file_param.path().parent().unwrap().display()))
-          .arg(file_path)
-          .status().unwrap_or_else(|e| {
-            println!("failed to execute process: {}", e);
-            panic!("failed to execute process: {}", e);
-          });
+          // read the configuration from the config_fname file,
+          // if not found or not correct, load a default configuration string
+          let conf = match config::reader::from_file(Path::new(config_fname)) {
+            Ok(conf) => conf,
+            Err(why) => {
+              println!("error reading the configuration file '{}': {:?}", config_fname,why);
+
+              // go to fallback
+
+              let ref default_configuration_str = format!(
+                "transformation_cmd=\"{}\";\n",
+
+                "timeout --kill-after 10s 1m \
+                 time -v -a -o {working_dir}/time.log \
+                 libreoffice --headless --convert-to pdf:writer_pdf_Export --outdir {working_dir} {file}");
+
+              match from_str(default_configuration_str) {
+                Err(why) => panic!(why),
+                Ok(conf) => conf
+              }
+            }
+          };
+
+
+          // run the cmd
+
+          let cmd_name = conf.lookup_str("transformation_cmd").unwrap();
+          let cmd_name = cmd_name.replace("{working_dir}", &format!("{}",file_param.path().parent().unwrap().display()));
+          let cmd_name = cmd_name.replace("{file}", &file_path);
+
+          println!("cmd: {}", cmd_name);
+
+          let mut cmd_args: Vec<&str> = cmd_name.split_whitespace()
+                                            .collect();
+
+
+          let res = Command::new(cmd_args.remove(0))
+                            .args(&cmd_args)
+                            .status()
+                            .unwrap_or_else(|e| {
+                              println!("failed to execute process: {}", e);
+                              panic!("failed to execute process: {}", e);
+                            });
 
           println!("process exited with: {}", res);
 
-          let ref file_path = format!("{}.pdf" , file_param.path().display());
-          println!("file_path: {}", file_path);
-          Ok(Response::with((status::Ok, Path::new(file_path))))
+          if res.success() {
+            let ref file_path = format!("{}.pdf" , file_param.path().display());
+            println!("file_path: {}", file_path);
+            return Ok(Response::with((status::Ok, Path::new(file_path))))
+          }
+          else {
+            return Ok(Response::with(status::InternalServerError))
+
+
+            // copy the file in an error dirctory for further investigations
+
+          }
+
+
         }
       }
     }
   }
 
-
-
 }
+
+#[macro_use]
+mod param_rules;
 
 require_param!(RequireMd5sumParam, "md5sum", String);
 require_param!(RequireFileParam, "filename", params::File);

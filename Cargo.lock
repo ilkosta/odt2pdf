@@ -2,6 +2,7 @@
 name = "shatest"
 version = "0.1.0"
 dependencies = [
+ "config 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crc 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "formdata 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "iron 0.1.20 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -42,6 +43,14 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "rustc-serialize 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "config"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "nom 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -202,6 +211,11 @@ dependencies = [
 [[package]]
 name = "modifier"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "nom"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
