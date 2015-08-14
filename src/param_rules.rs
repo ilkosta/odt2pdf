@@ -119,3 +119,11 @@ macro_rules! require_param {
     }
   }
 }
+
+
+pub fn get_param<T : RequiredParam + FromValue>(req: &mut Request, param_name: &str) -> T {
+  T::get_param_value(req, param_name).expect(
+    &format!("missing '{}' request parameter checking for example using the BeforeMiddleware step by require_param macro?",
+      param_name)
+  )
+}

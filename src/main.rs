@@ -5,7 +5,6 @@
 extern crate iron;
 extern crate router;
 extern crate params;
-extern crate config;
 
 use std::process::Command;
 use std::path::Path;
@@ -18,11 +17,13 @@ use iron::{BeforeMiddleware};
 
 mod hash;
 
+#[macro_use]
+mod config;
+
 use hash::sha1sum;
 
 
-use param_rules::RequiredParam;
-
+use param_rules::{RequiredParam, get_param};
 
 macro_rules! status_from_io_err {
   ($why:expr) => (
@@ -36,22 +37,17 @@ macro_rules! status_from_io_err {
   )
 }
 
-use config::reader::from_file;
-use config::reader::from_str;
 
-macro_rules! get_config_parameter {
-  ($conf:expr,$param:expr) => ($conf.lookup_str($param).expect(&format!("failed to load the configuration parameter '{}'",$param)) )
-}
 
-// use config::error::ConfigErrorKind;
+
 #[allow(needless_return)]
 fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
   use std::fs::{rename,File};
 
   // thanks to BeforeMiddleware rules we can do unwrap safely
-  let passed_sha1sum = &String::get_param_value(req, "sha1sum").expect("missing 'sha1sum' request parameter checking?");
-  let file_param = params::File::get_param_value(req, "filename").expect("missing 'filename' request parameter checking?");
+  let passed_sha1sum = &get_param::<String>(req,"sha1sum");
+  let file_param = get_param::<params::File>(req, "filename");
 
   let file_path = format!("{}.ods" , file_param.path().display());
 
@@ -82,39 +78,7 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
           }
 
 
-          let config_fname = "./conversion.conf";
-
-          // read the configuration from the config_fname file,
-          // if not found or not correct, load a default configuration string
-          let conf = match config::reader::from_file(Path::new(config_fname)) {
-            Ok(conf) => conf,
-            Err(why) => {
-              println!("error reading the configuration file '{}': {:?}", config_fname,why);
-
-              // go to fallback
-
-              let ref default_configuration_str = format!(
-                "transformation:\n{}\ncmd=\"{}\";\nerr_destination_dir=\"{}\";\n{};\n",
-
-                "{",
-
-                  // transformation.cmd
-                  "timeout --kill-after 10s 1m \
-                  time -v -a -o {working_dir}/time.log \
-                  libreoffice --headless --convert-to pdf:writer_pdf_Export --outdir {working_dir} {file}",
-
-                  // transformation.err_destination_dir
-                  "./errors",
-
-                 "}"
-              );
-
-              match from_str(default_configuration_str) {
-                Err(why) => panic!(why),
-                Ok(conf) => conf
-              }
-            }
-          };
+          let conf = config::get_config();
 
 
           // run the cmd
