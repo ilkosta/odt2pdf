@@ -18,7 +18,7 @@ use iron::{BeforeMiddleware};
 
 mod hash;
 
-use hash::md5sum;
+use hash::sha1sum;
 
 
 use param_rules::RequiredParam;
@@ -50,7 +50,7 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
   use std::fs::{rename,File};
 
   // thanks to BeforeMiddleware rules we can do unwrap safely
-  let passed_md5sum = &String::get_param_value(req, "md5sum").expect("missing 'md5sum' request parameter checking?");
+  let passed_sha1sum = &String::get_param_value(req, "sha1sum").expect("missing 'sha1sum' request parameter checking?");
   let file_param = params::File::get_param_value(req, "filename").expect("missing 'filename' request parameter checking?");
 
   let file_path = format!("{}.ods" , file_param.path().display());
@@ -72,11 +72,11 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
           Ok(Response::with((status, format!("failed to opening the received file: {}", why))))
         },
         Ok(ref mut file) => {
-          let calculated_md5sum = &md5sum(file);
-          if calculated_md5sum != passed_md5sum {
+          let calculated_sha1sum = &sha1sum(file);
+          if calculated_sha1sum != passed_sha1sum {
             let msg = format!(
-              "the md5sum '{}' calculate for the file {} doesn't correspond to the parameter '{}'",
-              calculated_md5sum, file_path, passed_md5sum
+              "the sha1sum '{}' calculate for the file {} doesn't correspond to the parameter '{}'",
+              calculated_sha1sum, file_path, passed_sha1sum
             );
             return Ok(Response::with((status::PreconditionRequired, msg)))
           }
@@ -178,7 +178,7 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 #[macro_use]
 mod param_rules;
 
-require_param!(RequireMd5sumParam, "md5sum", String);
+require_param!(RequireMd5sumParam, "sha1sum", String);
 require_param!(RequireFileParam, "filename", params::File);
 
 mod logger;

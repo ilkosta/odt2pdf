@@ -32,7 +32,7 @@ hash_file!(md5sum,  Md5);
 
 
 use self::crypto::sha1::Sha1;
-hash_file!(sha1,    Sha1);
+hash_file!(sha1sum,    Sha1);
 
 
 #[test]
