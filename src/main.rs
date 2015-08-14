@@ -47,7 +47,7 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
   let passed_sha1sum = &get_param::<String>(req,"sha1sum");
   let file_param = get_param::<params::File>(req, "filename");
 
-  let file_path = format!("{}.ods" , file_param.path().display());
+  let file_path = format!("{}.odt" , file_param.path().display());
 
 
 
