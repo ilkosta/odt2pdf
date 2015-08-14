@@ -2,6 +2,7 @@
 name = "shatest"
 version = "0.1.0"
 dependencies = [
+ "clippy 0.0.11 (git+https://github.com/Manishearth/rust-clippy)",
  "config 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crc 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "formdata 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -36,6 +37,11 @@ dependencies = [
  "plugin 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "clippy"
+version = "0.0.11"
+source = "git+https://github.com/Manishearth/rust-clippy#1afc5b6235f42fba70440c7beb29a9e1c6859532"
 
 [[package]]
 name = "conduit-mime-types"

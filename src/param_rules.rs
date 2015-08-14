@@ -42,22 +42,24 @@ pub trait RequiredParam<T : params::FromValue = Self> {
     }
 
     let param_res = req.get_ref::<Params>();
-    return match param_res {
+
+    match param_res {
       Err(why) => {
         bad_request!(why)
       },
       Ok(ref params) => {
         match params.find(&[name]) {
-          None => bad_request!(StringError(format!("the request doesn't contains the parameter {}", name).to_string())),
+          None => bad_request!(StringError(format!("the request doesn't contains the parameter {}", name))),
           Some(p) => if let Some(_) = Self::get_value(p) {
             Ok(())
           } else {
-            bad_request!(StringError(format!("the '{}' parameter is not of the correct type",name).to_string()))
+            bad_request!(StringError(format!("the '{}' parameter is not of the correct type",name)))
           }
 
         }
       }
     }
+
   }
 
   fn get_param_value(req: &mut Request, name: &str) -> Option<T> {

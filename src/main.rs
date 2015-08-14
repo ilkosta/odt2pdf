@@ -1,4 +1,7 @@
-﻿
+﻿#![feature(plugin)]
+
+#![plugin(clippy)]
+
 extern crate iron;
 extern crate router;
 extern crate params;
@@ -13,9 +16,9 @@ use iron::status;
 use iron::{BeforeMiddleware};
 
 
-mod md5sum;
+mod hash;
 
-use md5sum::md5sum;
+use hash::md5sum;
 
 
 use param_rules::RequiredParam;
@@ -35,14 +38,20 @@ macro_rules! status_from_io_err {
 
 use config::reader::from_file;
 use config::reader::from_str;
+
+macro_rules! get_config_parameter {
+  ($conf:expr,$param:expr) => ($conf.lookup_str($param).expect(&format!("failed to load the configuration parameter '{}'",$param)) )
+}
+
 // use config::error::ConfigErrorKind;
+#[allow(needless_return)]
 fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
   use std::fs::{rename,File};
 
   // thanks to BeforeMiddleware rules we can do unwrap safely
-  let passed_md5sum = &String::get_param_value(req, "md5sum").unwrap();
-  let file_param = params::File::get_param_value(req, "filename").unwrap();
+  let passed_md5sum = &String::get_param_value(req, "md5sum").expect("missing 'md5sum' request parameter checking?");
+  let file_param = params::File::get_param_value(req, "filename").expect("missing 'filename' request parameter checking?");
 
   let file_path = format!("{}.ods" , file_param.path().display());
 
@@ -85,11 +94,20 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
               // go to fallback
 
               let ref default_configuration_str = format!(
-                "transformation_cmd=\"{}\";\n",
+                "transformation:\n{}\ncmd=\"{}\";\nerr_destination_dir=\"{}\";\n{};\n",
 
-                "timeout --kill-after 10s 1m \
-                 time -v -a -o {working_dir}/time.log \
-                 libreoffice --headless --convert-to pdf:writer_pdf_Export --outdir {working_dir} {file}");
+                "{",
+
+                  // transformation.cmd
+                  "timeout --kill-after 10s 1m \
+                  time -v -a -o {working_dir}/time.log \
+                  libreoffice --headless --convert-to pdf:writer_pdf_Export --outdir {working_dir} {file}",
+
+                  // transformation.err_destination_dir
+                  "./errors",
+
+                 "}"
+              );
 
               match from_str(default_configuration_str) {
                 Err(why) => panic!(why),
@@ -100,9 +118,9 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
 
           // run the cmd
-
-          let cmd_name = conf.lookup_str("transformation_cmd").unwrap();
-          let cmd_name = cmd_name.replace("{working_dir}", &format!("{}",file_param.path().parent().unwrap().display()));
+          let working_dir = format!("{}",file_param.path().parent().expect("cannot access the directory of the uploaded temporary file").display());
+          let cmd_name = get_config_parameter!(conf,"transformation.cmd");
+          let cmd_name = cmd_name.replace("{working_dir}", &working_dir);
           let cmd_name = cmd_name.replace("{file}", &file_path);
 
           println!("cmd: {}", cmd_name);
@@ -127,10 +145,25 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
             return Ok(Response::with((status::Ok, Path::new(file_path))))
           }
           else {
-            return Ok(Response::with(status::InternalServerError))
-
-
             // copy the file in an error dirctory for further investigations
+            let err_destination_dir = get_config_parameter!(conf,"transformation.err_destination_dir");
+            //             let res = Command::new("mkdir")
+            //                               .args(&["-p",err_destination_dir])
+            //                               .status()
+            //                               .unwrap_or_else(|e| {
+            //                                 println!("failed to execute process: {}", e);
+            //                                 panic!("failed to execute process: {}", e);
+            //                               });
+
+            Command::new("nice")
+            .args(&["-n","20","cp","-R", &working_dir, err_destination_dir])
+            .spawn()
+            .unwrap_or_else(|e| {
+              println!("failed to execute process: {}", e);
+              panic!("failed to execute process: {}", e);
+            });
+
+            return Ok(Response::with(status::InternalServerError))
 
           }
 

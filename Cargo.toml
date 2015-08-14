@@ -4,7 +4,6 @@ name = "shatest"
 version = "0.1.0"
 
 [dependencies]
-config = "*"
 crc = "^1.0.0"
 formdata = "*"
 iron = "*"
@@ -12,3 +11,7 @@ params = "*"
 router = "*"
 rust-crypto = "*"
 time = "*"
+config = "*"
+
+[dependencies.clippy]
+git = "https://github.com/Manishearth/rust-clippy"
