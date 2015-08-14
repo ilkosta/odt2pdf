@@ -38,8 +38,6 @@ macro_rules! status_from_io_err {
 }
 
 
-
-
 #[allow(needless_return)]
 fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
