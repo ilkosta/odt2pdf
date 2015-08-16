@@ -2,9 +2,15 @@
 
 #![plugin(clippy)]
 
+#[macro_use]
+extern crate log;
+extern crate fern;
+
 extern crate iron;
 extern crate router;
 extern crate params;
+extern crate staticfile;
+extern crate mount;
 
 use std::process::Command;
 use std::path::Path;
@@ -145,19 +151,26 @@ require_param!(RequireFileParam, "filename", params::File);
 
 mod logger;
 
-use logger::Logger;
-use iron::{AroundMiddleware};
 fn start_server() {
+    logger::init();
+    
    let mut router = Router::new();
    let mut chain_form_file = Chain::new(submit_form_file);
 
    chain_form_file.link_before(RequireMd5sumParam);
    chain_form_file.link_before(RequireFileParam);
 
-   router.post("/openact", Logger::default().around(Box::new(chain_form_file)));
+   router.post("/odt", logger::get_log_enabled_handler(Box::new(chain_form_file)));
+//    router.get("/openact/", staticfile::Static::new(Path::new("src/asset/html/")));
+   
+   let mut mount = mount::Mount::new();
+   mount.mount("/", router)
+        .mount("/openact/", staticfile::Static::new(Path::new("src/asset/html/")));
+
 
    println!("started server at http://localhost:3000/");
-   Iron::new(router).http("localhost:3000").unwrap();
+//    Iron::new(router).http("localhost:3000").unwrap();
+   Iron::new(mount).http("localhost:3000").unwrap();
 }
 
 

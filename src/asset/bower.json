@@ -1,0 +1,19 @@
+{
+  "name": "asset",
+  "version": "0.0.0",
+  "authors": [
+    "ilkosta <costantino.giuliodori@gmail.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "filesize": "~3.1.3",
+    "jsSHA": "~2.0.1"
+  }
+}

@@ -1,0 +1,55 @@
+﻿doctype html(encoding="utf-8")
+html(lang="it")
+  head
+    meta(charset="UTF-8")
+
+  body
+    h1 Converti .odt in .pdf/A
+
+    form(action="http://localhost:3000/openact/", method="POST", enctype="multipart/form-data", accept-charset="utf-8")
+      fieldset
+        legend conversione di un file .odt (open/libreoffice) in PDF/A
+
+        label File da convertire
+          input(type="file",
+                name="filename",
+                accept=".odt",
+                onchange="handleFile(this.files[0])"
+                  )
+          p#size
+
+        label Sha1 del file
+          input(type="text",
+                id="sha1sum",
+                name="sha1sum",
+                inputmode="verbatim",
+                placeholder="the sha1sum of the file",
+                size=45,
+                required
+                )
+
+      input(type="submit", value="converti")
+
+
+    script(type="text/javascript",src="js/filesize/lib/filesize.min.js")
+    script(type="text/javascript",src="js/jsSHA/src/sha1.js")
+    script(type="text/javascript").
+      function handleFile(selecteFile) {
+        document.getElementById('size').innerText = (selecteFile)
+          ? filesize(selecteFile.size)
+          : "";
+
+        if(selecteFile) {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var hasher = new jsSHA("SHA-1", "TEXT")
+            hasher.update(reader.result);
+            var hash = hasher.getHash("HEX");
+            document.getElementById('sha1sum').value = hash;
+          }
+          reader.readAsText(selecteFile, "UTF-8");
+        } else {
+          document.getElementById('sha1sum').value = "";
+        }
+      }
+

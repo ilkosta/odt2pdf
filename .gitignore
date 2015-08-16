@@ -1,4 +1,9 @@
-target
+﻿target
+test/odt.list
+test/errors
+test/docs
+
+*.log
 
 # Created by https://www.gitignore.io
 
