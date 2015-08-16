@@ -17,7 +17,7 @@ impl AroundMiddleware for LogEnabler {
         Box::new(HandlerWithLog { handler: handler } ) as Box<Handler>
     }
 }
-
+ 
 impl <H: Handler> Handler for HandlerWithLog<H> {
 
     fn handle(&self, req: &mut Request) -> IronResult<Response> {
