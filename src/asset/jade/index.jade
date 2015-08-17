@@ -1,55 +1,114 @@
-﻿doctype html(encoding="utf-8")
-html(lang="it")
-  head
-    meta(charset="UTF-8")
+﻿doctype html(lang='en')
+head
+  meta(charset='utf-8')
+  meta(http-equiv='X-UA-Compatible', content='IE=edge')
+  meta(name='viewport', content='width=device-width, initial-scale=1')
+  // The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags
+  title Da Odt a Pdf/A
+  // Bootstrap
+  link(href='js/bootstrap/dist/css/bootstrap.min.css', rel='stylesheet')
+  // HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries
+  // WARNING: Respond.js doesn't work if you view the page via file://
+  //if lt IE 9
+  script(src='js/html5shiv/dist/html5shiv.min.js')
+  script(src='js/respond/dest/respond.min.js')
 
-  body
-    h1 Converti .odt in .pdf/A
 
-    form(action="http://localhost:3000/openact/", method="POST", enctype="multipart/form-data", accept-charset="utf-8")
-      fieldset
-        legend conversione di un file .odt (open/libreoffice) in PDF/A
+body
+  br
+  .container.col-md-6
+    .jumbotron
+      h1 Converti .odt in .pdf/A
+      p 
+        | Servizio di conversione di file 
+        a(href="https://it.wikipedia.org/wiki/OpenDocument") odt
+        |  generati tipicamente da 
+        a(href="https://it.libreoffice.org") LibreOffice 
+        |  ed 
+        a(href="http://www.openoffice.org/it/") OpenOffice 
+        |  nel formato standard 
+        a(href="https://it.wikipedia.org/wiki/PDF/A") PDF/A
 
-        label File da convertire
-          input(type="file",
-                name="filename",
-                accept=".odt",
-                onchange="handleFile(this.files[0])"
-                  )
-          p#size
+  form.col-md-6(action="http://localhost:3000/odt2pdf", method="POST", enctype="multipart/form-data", accept-charset="utf-8")
+    fieldset
+      legend.lead conversione di un file .odt (open/libreoffice) in PDF/A
+      .form-group.form-group-lg
+        span
+          labelcontrol-label File ODT da convertire
 
-        label Sha1 del file
-          input(type="text",
+          input(type='file', name='filename', accept='.odt', onchange="handleFile(this.files[0])")
+
+        // input#odtfile(type='file', style='display:none',
+        //                   name="filename",
+        //                  accept=".odt",
+        //                   onchange="handleFile(this.files[0])"
+        //     )
+
+      // .form-group.form-group-lg
+        // .input-group
+        //   input#odtfname.form-control(type='text', placeholder="seleziona un file da convertire")
+        //   span.input-group-addon
+        //     button.btn(onclick="getElementById('odtfile').click();false;") Sfoglia
+
+      span.help-block#size
+
+      .form-group.form-group-lg
+        .col-md1
+          labelcontrol-label(for="sha1sum") Sha1 del file
+        .col-md4
+          .input-group
+            span.input-group-addon
+              span.glyphicon.glyphicon-qrcode
+            input.form-control(type="text",
                 id="sha1sum",
                 name="sha1sum",
                 inputmode="verbatim",
                 placeholder="the sha1sum of the file",
-                size=45,
                 required
                 )
+          span.help-block 
+            | Per essere certi che non ci siano errori di upload del file, occorre fornire anche il suo hash SHA1.
+            br
+            span.glyphicon.glyphicon-info-sign  
+            |  Se il browser non è obsoleto, l'hash verrà calcolato automaticamente
 
-      input(type="submit", value="converti")
+      .form-group.form-group-lg
+        input.btn.btn-lg.btn-primary(type="submit", value="converti")
 
 
-    script(type="text/javascript",src="js/filesize/lib/filesize.min.js")
-    script(type="text/javascript",src="js/jsSHA/src/sha1.js")
-    script(type="text/javascript").
-      function handleFile(selecteFile) {
-        document.getElementById('size').innerText = (selecteFile)
-          ? filesize(selecteFile.size)
-          : "";
+  script(type="text/javascript",src="js/filesize/lib/filesize.min.js")
+  script(type="text/javascript",src="js/crypto-js/crypto-js.js")
+  
+  script(type="text/javascript").
+    function handleFile(selecteFile) {
 
-        if(selecteFile) {
-          var reader = new FileReader();
-          reader.onload = function(e) {
-            var hasher = new jsSHA("SHA-1", "TEXT")
-            hasher.update(reader.result);
-            var hash = hasher.getHash("HEX");
-            document.getElementById('sha1sum').value = hash;
-          }
-          reader.readAsText(selecteFile, "UTF-8");
-        } else {
-          document.getElementById('sha1sum').value = "";
-        }
+      if(selecteFile) {
+        document.getElementById('size').innerHTML = "dimensione: " + filesize(selecteFile.size)
+
+        var reader = new FileReader();
+        var sha1 = CryptoJS.algo.SHA1.create();
+        var read = 0;
+        var unit = 1024 * 1024;
+        var blob;
+        var reader = new FileReader();
+        reader.readAsArrayBuffer(selecteFile.slice(read, read + unit));
+        reader.onload = function(e) {
+            var bytes = CryptoJS.lib.WordArray.create(e.target.result);
+            sha1.update(bytes);
+            read += unit;
+            if (read < selecteFile.size) {
+                blob = selecteFile.slice(read, read + unit);
+                reader.readAsArrayBuffer(blob);
+            } else {
+                var hash = sha1.finalize();
+                console.log('secondo metodo: ', hash.toString(CryptoJS.enc.Hex)); // print the result
+                document.getElementById('sha1sum').value = hash.toString(CryptoJS.enc.Hex);
+            }
+        }        
+        
+      } else {
+        document.getElementById('size').innerHTML = "";
+        document.getElementById('sha1sum').value = "";
       }
+    }
 

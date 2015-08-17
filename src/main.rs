@@ -160,7 +160,7 @@ fn start_server() {
    chain_form_file.link_before(RequireMd5sumParam);
    chain_form_file.link_before(RequireFileParam);
 
-   router.post("/odt", logger::get_log_enabled_handler(Box::new(chain_form_file)));
+   router.post("/odt2pdf", logger::get_log_enabled_handler(Box::new(chain_form_file)));
 //    router.get("/openact/", staticfile::Static::new(Path::new("src/asset/html/")));
    
    let mut mount = mount::Mount::new();
