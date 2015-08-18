@@ -6,7 +6,6 @@ description = "a simple REST webservice to convert .odt in .pdf by executing lib
 repository = "https://github.com/ilkosta/odt2pdf"
 readme = "Readme.md"
 
-license = "MIT"
 license-file = "LICENSE"
 
 [dependencies]
