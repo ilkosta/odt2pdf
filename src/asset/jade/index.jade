@@ -18,9 +18,9 @@ body
   br
   .container.col-md-6
     .jumbotron
-      h1 Converti .odt in .pdf/A
+      h1 Conversione da ODT a PDF/A
       p 
-        | Servizio di conversione di file 
+        | Servizio di conversione di file nel formato standard 
         a(href="https://it.wikipedia.org/wiki/OpenDocument") odt
         |  generati tipicamente da 
         a(href="https://it.libreoffice.org") LibreOffice 
@@ -63,14 +63,15 @@ body
                 id="sha1sum",
                 name="sha1sum",
                 inputmode="verbatim",
-                placeholder="the sha1sum of the file",
+                placeholder="hash del file",
                 required
                 )
           span.help-block 
             | Per essere certi che non ci siano errori di upload del file, occorre fornire anche il suo hash SHA1.
             br
             span.glyphicon.glyphicon-info-sign  
-            |  Se il browser non è obsoleto, l'hash verrà calcolato automaticamente
+            |  Se il browser non è obsoleto, 
+            strong l'hash verrà calcolato automaticamente
 
       .form-group.form-group-lg
         input.btn.btn-lg.btn-primary(type="submit", value="converti")
