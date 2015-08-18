@@ -1,11 +1,10 @@
 [package]
 authors = ["ilkosta <costantino.giuliodori@gmail.com>"]
-name = "shatest"
-version = "0.1.0"
+name = "odt2pdf"
+version = "0.0.1"
 
 [dependencies]
 config = "*"
-crc = "^1.0.0"
 formdata = "*"
 iron = "*"
 mount = "*"
