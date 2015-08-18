@@ -2,6 +2,12 @@
 authors = ["ilkosta <costantino.giuliodori@gmail.com>"]
 name = "odt2pdf"
 version = "0.0.1"
+description = "a simple REST webservice to convert .odt in .pdf by executing libreoffice"
+repository = "https://github.com/ilkosta/odt2pdf"
+readme = "Readme.md"
+
+license = "MIT"
+license-file = "LICENSE"
 
 [dependencies]
 config = "*"
