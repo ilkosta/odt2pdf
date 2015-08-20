@@ -12,16 +12,16 @@ use std::error::Error;
 use std::fmt::{self, Debug};
 
 #[derive(Debug)]
-struct StringError(String);
+pub struct RequiredParamError(String);
 
 
-impl fmt::Display for StringError {
+impl fmt::Display for RequiredParamError {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     Debug::fmt(self, f)
   }
 }
 
-impl Error for StringError {
+impl Error for RequiredParamError {
   fn description(&self) -> &str { &*self.0 }
 }
 
@@ -49,11 +49,11 @@ pub trait RequiredParam<T : params::FromValue = Self> {
       },
       Ok(ref params) => {
         match params.find(&[name]) {
-          None => bad_request!(StringError(format!("the request doesn't contains the parameter {}", name))),
+          None => bad_request!(RequiredParamError(format!("the request doesn't contains the parameter {}", name))),
           Some(p) => if let Some(_) = Self::get_value(p) {
             Ok(())
           } else {
-            bad_request!(StringError(format!("the '{}' parameter is not of the correct type",name)))
+            bad_request!(RequiredParamError(format!("the '{}' parameter is not of the correct type",name)))
           }
 
         }
@@ -109,7 +109,7 @@ impl_required!(f64);
 
 #[macro_export]
 macro_rules! require_param {
-  ($name:ident, $param_name:expr, $ty:ty) => {
+  ($name:ident, $param_name:expr, $ty:ty) => (
     struct $name;
 
     impl BeforeMiddleware for $name {
@@ -117,8 +117,29 @@ macro_rules! require_param {
         <$ty>::check(req, $param_name)
       }
     }
-  }
+  );
+  ($name:ident, $param_name:expr, $ty:ty, $next:expr) => (
+    struct $name;
+
+    impl BeforeMiddleware for $name {
+      fn before(&self, req: &mut Request) -> IronResult<()> {
+        
+        match <$ty>::check(req, $param_name) {
+          Err(why) => Err(why),
+          Ok(_) => {
+            let val = get_param::<$ty>(req, $param_name);
+            $next(req, val)
+          }
+        }
+        
+      }
+    }
+    
+  )
 }
+
+
+
 
 
 pub fn get_param<T : RequiredParam + FromValue>(req: &mut Request, param_name: &str) -> T {
