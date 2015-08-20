@@ -12,9 +12,17 @@ extern crate params;
 extern crate staticfile;
 extern crate mount;
 
+extern crate rustc_serialize;
+extern crate docopt;
+
+
+use std::fs::{rename,File};
 use std::process::Command;
 use std::path::Path;
 use std::error::Error;
+use std::net::{SocketAddrV4};
+use std::net::Ipv4Addr;
+use std::str::FromStr;
 
 use std::fmt::{self};
 
@@ -22,7 +30,8 @@ use iron::prelude::*;
 use router::{Router};
 use iron::status;
 use iron::{BeforeMiddleware};
-use std::fs::{rename,File};
+
+use docopt::Docopt;
 
 mod hash;
 
@@ -177,30 +186,53 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
 mod logger;
 
-fn start_server() {
-    logger::init();
-    
-   let mut router = Router::new();
-   let mut chain_form_file = Chain::new(submit_form_file);
+fn start_server(args : &Args) {
+  logger::init();
 
-   chain_form_file.link_before(RequireMd5sumParam);
-   chain_form_file.link_before(RequireFileParam);
+  let mut router = Router::new();
+  let mut chain_form_file = Chain::new(submit_form_file);
 
-   router.post("/odt2pdf", logger::get_log_enabled_handler(Box::new(chain_form_file)));
-//    router.get("/openact/", staticfile::Static::new(Path::new("src/asset/html/")));
-   
-   let mut mount = mount::Mount::new();
-   mount.mount("/", router)
-        .mount("/openact/", staticfile::Static::new(Path::new("src/asset/html/")));
+  chain_form_file.link_before(RequireMd5sumParam);
+  chain_form_file.link_before(RequireFileParam);
+
+  router.post("/odt2pdf", logger::get_log_enabled_handler(Box::new(chain_form_file)));
+  //    router.get("/openact/", staticfile::Static::new(Path::new("src/asset/html/")));
+
+  let mut mount = mount::Mount::new();
+  mount.mount("/", router)
+      .mount("/openact/", staticfile::Static::new(Path::new("src/asset/html/")));
 
 
-   println!("started server at http://localhost:3000/");
-//    Iron::new(router).http("localhost:3000").unwrap();
-   Iron::new(mount).http("localhost:3000").unwrap();
+  println!("started server at http://{}:{}/", args.flag_host, args.flag_port);
+  //    Iron::new(router).http("localhost:3000").unwrap();
+  Iron::new(mount).http( SocketAddrV4::new(Ipv4Addr::from_str(&args.flag_host).unwrap(), args.flag_port) ).unwrap();
 }
 
 
+
+const USAGE: &'static str = "
+Naval Fate.
+
+Usage:
+  odt2pdf [--host=<host> --port=<port>]
+
+Options:
+  -h --help       Show this screen.
+  --version       Show version.
+  --port=<kn>     Port of the service [default: 3333].
+  --host=<host>   Host of the service [default: 0.0.0.0].
+";
+
+#[derive(Debug, RustcDecodable)]
+struct Args {
+    flag_port: u16,
+    flag_host: String
+}
+
 fn main() {
-    println!("Hello, world!");
-    start_server();
+    let args: Args = Docopt::new(USAGE)
+                            .and_then(|d| d.decode())
+                            .unwrap_or_else(|e| e.exit());
+                            
+    start_server(&args);
 }

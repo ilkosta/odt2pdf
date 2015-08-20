@@ -118,7 +118,7 @@ macro_rules! require_param {
       }
     }
   );
-  ($name:ident, $param_name:expr, $ty:ty, $next:expr) => (
+  ($name:ident, $param_name:expr, $ty:ty, $rule:expr) => (
     struct $name;
 
     impl BeforeMiddleware for $name {
@@ -128,7 +128,7 @@ macro_rules! require_param {
           Err(why) => Err(why),
           Ok(_) => {
             let val = get_param::<$ty>(req, $param_name);
-            $next(req, val)
+            $rule(req, val)
           }
         }
         

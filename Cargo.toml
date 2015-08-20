@@ -1,25 +1,26 @@
 [package]
 authors = ["ilkosta <costantino.giuliodori@gmail.com>"]
-name = "odt2pdf"
-version = "0.0.1"
 description = "a simple REST webservice to convert .odt in .pdf by executing libreoffice"
-repository = "https://github.com/ilkosta/odt2pdf"
-readme = "Readme.md"
-
 license-file = "LICENSE"
+name = "odt2pdf"
+readme = "Readme.md"
+repository = "https://github.com/ilkosta/odt2pdf"
+version = "0.0.1"
 
 [dependencies]
 config = "*"
+docopt = "*"
+fern = "0.3.*"
 formdata = "*"
 iron = "*"
+log = "0.3.*"
 mount = "*"
 params = "*"
 router = "*"
 rust-crypto = "*"
+rustc-serialize = "*"
 staticfile = "*"
 time = "*"
-log = "0.3.*"
-fern = "0.3.*"
 
 [dependencies.clippy]
 git = "https://github.com/Manishearth/rust-clippy"
