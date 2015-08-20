@@ -5,17 +5,19 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "setup": "npm install && bower install",
+    "jadec": "./node_modules/.bin/jade jade --hierarchy --out html",
     "jade": "./node_modules/.bin/jade -w jade --hierarchy --out html",
-    "dev": "npm run jade & gulp"
+    "dev": "echo using 'node $(node -v)'; npm install && npm run jade & gulp"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "connect-livereload": "^0.5.3",
-    "express": "^4.13.3",
-    "gulp": "^3.9.0",
-    "tiny-lr": "^0.1.6",
-    "jade": "*"
+    "connect-livereload": "*",
+    "express": "*",
+    "gulp": "*",
+    "jade": "*",
+    "gulp-livereload": "*"
   }
 }

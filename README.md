@@ -29,11 +29,9 @@ To generate the sample html form:
 From the project directory 
 
 ``` shell
-cd src/asset
 nvm use # if you use nvm to switch between different node/iojs versions
-npm install
-bower install
-npm run jade
+npm run setup
+npm run jadec
 ```
 
 ## run the service
