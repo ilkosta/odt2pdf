@@ -20,11 +20,13 @@ use std::fs::{rename,File};
 use std::process::Command;
 use std::path::Path;
 use std::error::Error;
+use std::io::ErrorKind;
+
 use std::net::{SocketAddrV4};
 use std::net::Ipv4Addr;
 use std::str::FromStr;
 
-use std::fmt::{self};
+
 
 use iron::prelude::*;
 use router::{Router};
@@ -38,74 +40,29 @@ mod hash;
 #[macro_use]
 mod config;
 
-use hash::sha1sum;
+#[macro_use]
+mod io_err2http_err;
 
 
 use param_rules::{RequiredParam, get_param};
 
-macro_rules! status_from_io_err {
-  ($why:expr) => (
-
-    match $why.kind() {
-      std::io::ErrorKind::NotFound => status::NotFound,
-      std::io::ErrorKind::PermissionDenied => status::Forbidden,
-      _ => status::InternalServerError,
-    }
-
-  )
-}
 
 #[macro_use]
 mod param_rules;
 
-
-#[derive(Debug)]
-struct UploadError(String);
-
-impl fmt::Display for UploadError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Display::fmt("upload error", f)
-    }
-}
-
-impl Error for UploadError {
-    fn description(&self) -> &str {
-        "upload error"
-    }
-}
+mod upload_checks;
 
 
-fn compare_sha1sum_of_file(req: &mut Request, file_param : params::File) -> IronResult<()> {
 
-  let file_path = file_param.path();
-  let passed_sha1sum = &get_param::<String>(req,"sha1sum"); // order dependency from RequireMd5sumParam
-  
-  match File::open( &file_path ) {
-  
-    Err(why) => {
-      let status = status_from_io_err!(why);
-      let msg = format!("failed to opening the received file: {}", why);
-      Err(IronError::new(UploadError(msg), status))
-    },
-    Ok(ref mut file) => {
-      let calculated_sha1sum = &sha1sum(file);
-      if calculated_sha1sum != passed_sha1sum {
-        let msg = format!(
-          "the sha1sum '{}' calculate for the file {} doesn't correspond to the parameter '{}'",
-          calculated_sha1sum, file_path.display(), passed_sha1sum
-        );
-        Err(IronError::new(UploadError(msg), status::PreconditionRequired))
-      }
-      else {
-        Ok(())
-      }
-    }
-    
-  }
-}
+
 
 require_param!(RequireMd5sumParam, "sha1sum", String);
-require_param!(RequireFileParam, "filename", params::File, compare_sha1sum_of_file);
+require_param!(RequireFileParam, "filename", params::File; rules [
+  upload_checks::odt_extension 
+, upload_checks::correct_magic_number  
+, upload_checks::same_sha1sum_of_param_req
+
+]);
 
 
 #[allow(needless_return)]
@@ -205,7 +162,6 @@ fn start_server(args : &Args) {
 
 
   println!("started server at http://{}:{}/", args.flag_host, args.flag_port);
-  //    Iron::new(router).http("localhost:3000").unwrap();
   Iron::new(mount).http( SocketAddrV4::new(Ipv4Addr::from_str(&args.flag_host).unwrap(), args.flag_port) ).unwrap();
 }
 
