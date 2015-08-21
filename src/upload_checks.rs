@@ -58,6 +58,7 @@ pub fn same_sha1sum_of_param_req(req: &mut Request, file_param : &self::params::
 }
 
 
+
 pub fn odt_extension(_: &mut Request, file_param : &self::params::File) -> IronResult<()> {
 
   let fname = String::from(file_param.filename().expect("filename parameter not present! it must be have checked by BeforeMiddleware"));
@@ -68,6 +69,8 @@ pub fn odt_extension(_: &mut Request, file_param : &self::params::File) -> IronR
     Ok(())
   }
 }
+
+
 
 pub fn correct_magic_number(_: &mut Request, file_param : &self::params::File) -> IronResult<()> {
 
@@ -89,9 +92,12 @@ pub fn correct_magic_number(_: &mut Request, file_param : &self::params::File) -
     Err(IronError::new(UploadError(String::from("Error determining file type.")), status::InternalServerError))
   } 
   else {
-    if String::from_utf8_lossy(&output.stdout) != "application/vnd.oasis.opendocument.text\n" {
+    let file_type = String::from_utf8_lossy(&output.stdout);
+    if  file_type != "application/vnd.oasis.opendocument.text\n" && 
+        file_type != "application/zip"
+    {
         Err(IronError::new(
-            UploadError(format!("wrong type: {}", String::from_utf8_lossy(&output.stdout))), status::PreconditionRequired))
+            UploadError(format!("wrong type: {}", file_type)), status::PreconditionRequired))
     }
     else {
 //         Err(IronError::new(UploadError(String::from("ok, ma stoppoooooooooo.")), status::PreconditionRequired))
