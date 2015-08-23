@@ -62,7 +62,8 @@ pub fn same_sha1sum_of_param_req(req: &mut Request, file_param : &self::params::
 pub fn odt_extension(_: &mut Request, file_param : &self::params::File) -> IronResult<()> {
 
   let fname = String::from(file_param.filename().expect("filename parameter not present! it must be have checked by BeforeMiddleware"));
-  if !fname.ends_with(".odt") || fname.ends_with(".ODT") {
+//   let fname = fname.toUpper();
+  if !fname.ends_with(".odt") {
     Err(IronError::new(UploadError(String::from("Wrong file extension.")), status::PreconditionRequired))
   }
   else {
@@ -94,7 +95,7 @@ pub fn correct_magic_number(_: &mut Request, file_param : &self::params::File) -
   else {
     let file_type = String::from_utf8_lossy(&output.stdout);
     if  file_type != "application/vnd.oasis.opendocument.text\n" && 
-        file_type != "application/zip"
+        file_type != "application/zip\n"
     {
         Err(IronError::new(
             UploadError(format!("wrong type: {}", file_type)), status::PreconditionRequired))

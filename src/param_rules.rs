@@ -7,7 +7,6 @@ use params::Params;
 use params::FromValue;
 
 
-
 use std::error::Error;
 use std::fmt::{self, Debug};
 
@@ -107,27 +106,40 @@ impl_required!(f32);
 impl_required!(f64);
 
 
-#[macro_export]
-macro_rules! require_param {
-  ($name:ident, $param_name:expr, $ty:ty) => (
+
+pub fn get_param<T : RequiredParam + FromValue>(req: &mut Request, param_name: &str) -> T {
+  T::get_param_value(req, param_name).expect(
+    &format!("missing '{}' request parameter checking for example using the BeforeMiddleware step by require_param macro?",
+      param_name)
+  )
+}
+
+
+macro_rules! required_param {
+  ($name:ident, $ty:ty) => (
+    #[allow(non_camel_case_types)]
     struct $name;
 
-    impl BeforeMiddleware for $name {
+    impl BeforeMiddleware for $name {      
       fn before(&self, req: &mut Request) -> IronResult<()> {
-        <$ty>::check(req, $param_name)
+        let param_name = stringify!($name);
+        <$ty>::check(req, param_name)
       }
     }
   );
-  ($name:ident, $param_name:expr, $ty:ty; rules [$( $rule:expr ),* ] ) => (
+      
+      
+  ($name:ident, $ty:ty; rules [$( $rule:expr ),* ] ) => (
+    #[allow(non_camel_case_types)]
     struct $name;
 
     impl BeforeMiddleware for $name {
       fn before(&self, req: &mut Request) -> IronResult<()> {
-        
-        match <$ty>::check(req, $param_name) {
+        let param_name = stringify!($name);
+        match <$ty>::check(req, param_name) {
           Err(why) => Err(why),
           Ok(_) => {
-            let val = get_param::<$ty>(req, $param_name);
+            let val = get_param::<$ty>(req, param_name);
             $(
               try!($rule(req, &val));              
             )*
@@ -138,16 +150,5 @@ macro_rules! require_param {
       }
     }
     
-  )
-}
-
-
-
-
-
-pub fn get_param<T : RequiredParam + FromValue>(req: &mut Request, param_name: &str) -> T {
-  T::get_param_value(req, param_name).expect(
-    &format!("missing '{}' request parameter checking for example using the BeforeMiddleware step by require_param macro?",
-      param_name)
   )
 }

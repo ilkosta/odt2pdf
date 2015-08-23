@@ -53,18 +53,6 @@ mod param_rules;
 mod upload_checks;
 
 
-
-
-
-require_param!(RequireMd5sumParam, "sha1sum", String);
-require_param!(RequireFileParam, "filename", params::File; rules [
-  upload_checks::odt_extension 
-, upload_checks::correct_magic_number  
-, upload_checks::same_sha1sum_of_param_req
-
-]);
-
-
 #[allow(needless_return)]
 fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
@@ -149,8 +137,14 @@ fn start_server(args : &Args) {
   let mut router = Router::new();
   let mut chain_form_file = Chain::new(submit_form_file);
 
-  chain_form_file.link_before(RequireMd5sumParam);
-  chain_form_file.link_before(RequireFileParam);
+  required_param!(sha1sum, String);
+  required_param!(filename, params::File; rules [
+    upload_checks::odt_extension 
+  , upload_checks::correct_magic_number  
+  , upload_checks::same_sha1sum_of_param_req]);
+  
+  chain_form_file.link_before(sha1sum);
+  chain_form_file.link_before(filename);
 
   router.post("/odt2pdf", logger::get_log_enabled_handler(Box::new(chain_form_file)));
   //    router.get("/openact/", staticfile::Static::new(Path::new("src/asset/html/")));
