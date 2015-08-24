@@ -7,6 +7,32 @@ use iron::{Handler, AroundMiddleware};
 
 struct LogEnabler;
 
+// pub struct UploadErrorDecoder;
+// 
+// impl AroundMiddleware for UploadErrorDecoder {
+// 
+//   struct CustomHandler<H: Handler> {
+//     handler: H
+//   }
+//   
+//   impl <H: Handler> Handler for CustomHandler<H> {
+// 
+//     fn handle(&self, req: &mut Request) -> IronResult<Response> {
+//       debug!("{:?}", req);
+//       let entry = self::time::precise_time_ns();        
+//       let res = self.handler.handle(req);
+//       trace!("{:?} - rt: {:?}", res, self::time::precise_time_ns() - entry);
+//       res
+//     }
+//   }
+// 
+// 
+//   fn around(self, handler: Box<Handler>) -> Box<Handler> {
+//       Box::new(CustomHandler { handler: handler } ) as Box<Handler>
+//   }
+// }
+
+
 struct HandlerWithLog<H: Handler> {
   handler: H
 }

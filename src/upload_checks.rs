@@ -13,6 +13,9 @@ use param_rules::{get_param};
 
 use hash::sha1sum;
 
+use config;
+
+
 #[derive(Debug)]
 struct UploadError(String);
 
@@ -76,7 +79,8 @@ pub fn odt_extension(_: &mut Request, file_param : &self::params::File) -> IronR
 pub fn correct_magic_number(_: &mut Request, file_param : &self::params::File) -> IronResult<()> {
 
   let ref file_path = format!("{}",file_param.path().display());
-  let cmd_name  = "file -b --mime-type {file}";
+  let conf = config::get_config();
+  let cmd_name  = conf.file.cmd;
   let cmd_name  = cmd_name.replace("{file}", &file_path);
   debug!("executing: {}", cmd_name);  
   let mut cmd_args: Vec<&str> = cmd_name.split_whitespace()
@@ -93,17 +97,21 @@ pub fn correct_magic_number(_: &mut Request, file_param : &self::params::File) -
     Err(IronError::new(UploadError(String::from("Error determining file type.")), status::InternalServerError))
   } 
   else {
-    let file_type = String::from_utf8_lossy(&output.stdout);
-    if  file_type != "application/vnd.oasis.opendocument.text\n" && 
-        file_type != "application/zip\n"
-    {
-        Err(IronError::new(
-            UploadError(format!("wrong type: {}", file_type)), status::PreconditionRequired))
+    let ref file_type = String::from_utf8_lossy(&output.stdout);
+    match conf.file.accepted_types.into_iter().find(|t| t == file_type) {
+      Some(_) => Ok(()),
+      None => Err(IronError::new(UploadError(format!("wrong type: {}", file_type)), status::PreconditionRequired))
     }
-    else {
-//         Err(IronError::new(UploadError(String::from("ok, ma stoppoooooooooo.")), status::PreconditionRequired))
-        Ok(())
-    }
+    
+      
   }
-  
 }
+
+
+// pub fn upload_err_decoding(handler : Box<Handler>) -> Box<Handler> {
+//   
+//   let use_log = LogEnabler;
+//     
+//   use_log.around(handler)
+// }
+// 

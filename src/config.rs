@@ -1,60 +1,67 @@
-﻿extern crate config;
+﻿extern crate rustc_serialize;
 
+use std::fs::File;
+use std::io::Read;
+use rustc_serialize::json::{self};
 
-
-use self::config::reader::from_str;
-// use self::config::error::ConfigErrorKind;
-
-fn default_config() -> self::config::types::Config {
-
-  let ref default_configuration_str = format!(
-    "transformation:\n{}\ncmd=\"{}\";\nerr_destination_dir=\"{}\";\n{};\n",
-
-    "{",
-
-      // transformation.cmd
-      "timeout --kill-after 10s 1m \
-      time -v -a -o {working_dir}/time.log \
-      libreoffice --headless --convert-to pdf:writer_pdf_Export --outdir {working_dir} {file}",
-
-      // transformation.err_destination_dir
-      "./errors",
-
-      "}"
-  );
-
-  match from_str(default_configuration_str) {
-    Err(why) => panic!(why),
-    Ok(conf) => conf
-  }
-
+#[allow(dead_code)]
+#[derive(RustcDecodable)]
+pub struct TransformationConf {
+  pub cmd : String,
+  pub error_dir: String
 }
 
-// use std::path::Path;
-// use self::config::reader::from_file;
-pub fn get_config() -> self::config::types::Config {
+#[allow(dead_code)]
+#[derive(RustcDecodable)]
+pub struct FileConf {
+  pub cmd: String,
+  pub accepted_types: Vec<String>
+}
 
-  default_config()
-
-
-//   let config_fname = "./conversion.conf";
-//
-//   // read the configuration from the config_fname file,
-//   // if not found or not correct, load a default configuration string
-//   match config::reader::from_file(Path::new(config_fname)) {
-//     Ok(conf) => conf,
-//     Err(why) => {
-//       println!("error reading the configuration file '{}': {:?}", config_fname,why);
-//
-//       // go to fallback
-//       default_config()
-//     }
-//   }
-
+#[derive(RustcDecodable)]
+pub struct Configuration {
+  pub transformation: TransformationConf,
+  pub file: FileConf
 }
 
 
-#[macro_export]
-macro_rules! get_config_parameter {
-  ($conf:expr,$param:expr) => ($conf.lookup_str($param).expect(&format!("failed to load the configuration parameter '{}'",$param)) )
+pub fn get_config() -> Configuration {
+  let config_fname = "./conf.json";
+  
+  let default_conf = r#" {
+    "transformation" : {
+      "cmd": "timeout --kill-after 10s 1m time -v -a -o {working_dir}/time.log libreoffice --headless --convert-to pdf:writer_pdf_Export --outdir {working_dir} {file}",
+      "error_dir": "./errors/"
+    },
+    "file" : {
+      "cmd" : "file -b --mime-type {file}",
+      "accepted_types": ["application/vnd.oasis.opendocument.text\n", "application/zip\n"]
+    }
+    
+  }"#.to_owned();
+  
+  let notify_error = |why| {
+    trace!("Erorr opening the configuration file {}: {}", config_fname , why);
+  };
+  
+  let conf_str = match File::open(config_fname) {
+    
+    Err(why) => {
+      notify_error(why);
+      default_conf
+    },
+    Ok(ref mut f) => {
+      let mut s = String::new();
+      match f.read_to_string(&mut s) {
+        Err(why) => {
+          notify_error(why);
+          default_conf
+        },
+        Ok(size) => if size > 0 {s} else {default_conf}
+      }
+    }
+  };
+  
+  json::decode(&conf_str).unwrap()
 }
+

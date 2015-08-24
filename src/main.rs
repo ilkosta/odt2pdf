@@ -74,7 +74,7 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
 
       // run the cmd
       let working_dir = format!("{}",file_param.path().parent().expect("cannot access the directory of the uploaded temporary file").display());
-      let cmd_name = get_config_parameter!(conf,"transformation.cmd");
+      let cmd_name = conf.transformation.cmd;
       let cmd_name = cmd_name.replace("{working_dir}", &working_dir);
       let cmd_name = cmd_name.replace("{file}", &file_path);
 
@@ -101,15 +101,8 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
       }
       else {
         // copy the file in an error dirctory for further investigations
-        let err_destination_dir = get_config_parameter!(conf,"transformation.err_destination_dir");
-        //             let res = Command::new("mkdir")
-        //                               .args(&["-p",err_destination_dir])
-        //                               .status()
-        //                               .unwrap_or_else(|e| {
-        //                                 println!("failed to execute process: {}", e);
-        //                                 panic!("failed to execute process: {}", e);
-        //                               });
-
+        let err_destination_dir = &conf.transformation.error_dir;
+        
         Command::new("nice")
         .args(&["-n","20","cp","-R", &working_dir, err_destination_dir])
         .spawn()
@@ -126,7 +119,6 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
   }
 
 }
-
 
 
 mod logger;
