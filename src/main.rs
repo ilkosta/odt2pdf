@@ -26,12 +26,10 @@ use std::net::{SocketAddrV4};
 use std::net::Ipv4Addr;
 use std::str::FromStr;
 
-
-
 use iron::prelude::*;
 use router::{Router};
 use iron::status;
-use iron::{BeforeMiddleware};
+use iron::{BeforeMiddleware,AfterMiddleware};
 
 use docopt::Docopt;
 
@@ -51,6 +49,14 @@ use param_rules::{RequiredParam, get_param};
 mod param_rules;
 
 mod upload_checks;
+
+
+struct ErrorHandler;
+impl AfterMiddleware for ErrorHandler {
+    fn catch(&self, _: &mut Request, err: IronError) -> IronResult<Response> {
+      debug!("handled the error: {:?}",err.error);
+      Ok(Response::with((err.response.status.unwrap(), format!("{{error: {:?} }}", err.error ) )))    }
+}
 
 
 #[allow(needless_return)]
@@ -92,12 +98,12 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
                           panic!("failed to execute process: {}", e);
                         });
 
-      println!("process exited with: {}", res);
+      debug!("process exited with: {}", res);
 
       if res.success() {
-        let ref file_path = format!("{}.pdf" , file_param.path().display());
-        println!("file_path: {}", file_path);
-        return Ok(Response::with((status::Ok, Path::new(file_path))))
+        let ref result_file_path = format!("{}.pdf" , file_param.path().display());
+        debug!("file_path: {}", result_file_path);
+        return Ok(Response::with((status::Ok, Path::new(result_file_path))))
       }
       else {
         // copy the file in an error dirctory for further investigations
@@ -107,7 +113,6 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
         .args(&["-n","20","cp","-R", &working_dir, err_destination_dir])
         .spawn()
         .unwrap_or_else(|e| {
-          println!("failed to execute process: {}", e);
           panic!("failed to execute process: {}", e);
         });
 
@@ -138,7 +143,8 @@ fn start_server(args : &Args) {
   chain_form_file.link_before(sha1sum);
   chain_form_file.link_before(filename);
 
-  router.post("/odt2pdf", logger::get_log_enabled_handler(Box::new(chain_form_file)));
+  chain_form_file.link_after(ErrorHandler);
+  router.post("/odt2pdf", chain_form_file);
   //    router.get("/openact/", staticfile::Static::new(Path::new("src/asset/html/")));
 
   let mut mount = mount::Mount::new();

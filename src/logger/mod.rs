@@ -2,60 +2,6 @@
 extern crate log;
 extern crate fern;
 
-use iron::prelude::*;
-use iron::{Handler, AroundMiddleware};
-
-struct LogEnabler;
-
-// pub struct UploadErrorDecoder;
-// 
-// impl AroundMiddleware for UploadErrorDecoder {
-// 
-//   struct CustomHandler<H: Handler> {
-//     handler: H
-//   }
-//   
-//   impl <H: Handler> Handler for CustomHandler<H> {
-// 
-//     fn handle(&self, req: &mut Request) -> IronResult<Response> {
-//       debug!("{:?}", req);
-//       let entry = self::time::precise_time_ns();        
-//       let res = self.handler.handle(req);
-//       trace!("{:?} - rt: {:?}", res, self::time::precise_time_ns() - entry);
-//       res
-//     }
-//   }
-// 
-// 
-//   fn around(self, handler: Box<Handler>) -> Box<Handler> {
-//       Box::new(CustomHandler { handler: handler } ) as Box<Handler>
-//   }
-// }
-
-
-struct HandlerWithLog<H: Handler> {
-  handler: H
-}
-
-impl AroundMiddleware for LogEnabler {
-
-    fn around(self, handler: Box<Handler>) -> Box<Handler> {
-        Box::new(HandlerWithLog { handler: handler } ) as Box<Handler>
-    }
-}
- 
-impl <H: Handler> Handler for HandlerWithLog<H> {
-
-    fn handle(&self, req: &mut Request) -> IronResult<Response> {
-        debug!("{:?}", req);
-        let entry = self::time::precise_time_ns();        
-        let res = self.handler.handle(req);
-        trace!("{:?} - rt: {:?}", res, self::time::precise_time_ns() - entry);
-        res
-    }
-}
-
-
 pub fn init() {
     let logger_config = fern::DispatchConfig {
         format: Box::new(|msg: &str, level: &log::LogLevel, _location: &log::LogLocation| {
@@ -71,14 +17,3 @@ pub fn init() {
         panic!("Failed to initialize global logger: {}", e);
     }
 }
-
-pub fn get_log_enabled_handler(handler : Box<Handler>) -> Box<Handler> {
-  
-  let use_log = LogEnabler;
-    
-  use_log.around(handler)
-}
-
-
-
-
