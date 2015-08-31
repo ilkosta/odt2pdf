@@ -1,8 +1,4 @@
-﻿#![feature(plugin)]
-
-#![plugin(clippy)]
-
-#[macro_use]
+﻿#[macro_use]
 extern crate log;
 extern crate fern;
 
@@ -34,6 +30,7 @@ use iron::{BeforeMiddleware,AfterMiddleware};
 use docopt::Docopt;
 
 mod hash;
+
 
 #[macro_use]
 mod config;
