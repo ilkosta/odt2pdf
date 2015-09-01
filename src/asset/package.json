@@ -8,7 +8,8 @@
     "setup": "npm install && ./node_modules/.bin/bower install",
     "jadec": "./node_modules/.bin/jade jade --hierarchy --out html",
     "jade": "./node_modules/.bin/jade -w jade --hierarchy --out html",
-    "dev": "echo using 'node $(node -v)'; npm install && npm run jade & gulp"
+    "dev": "echo using 'node $(node -v)'; npm install && npm run jade & gulp",
+    "build": "npm run setup; npm run jadec"
   },
   "keywords": [],
   "author": "",
