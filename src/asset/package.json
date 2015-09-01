@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "setup": "npm install && bower install",
+    "setup": "npm install && ./node_modules/.bin/bower install",
     "jadec": "./node_modules/.bin/jade jade --hierarchy --out html",
     "jade": "./node_modules/.bin/jade -w jade --hierarchy --out html",
     "dev": "echo using 'node $(node -v)'; npm install && npm run jade & gulp"
@@ -18,7 +18,7 @@
     "express": "^4.13.3",
     "gulp": "^3.9.0",
     "gulp-livereload": "*",
-    "jade": "*"
-
+    "jade": "*",
+    "bower": "*"
   }
 }
