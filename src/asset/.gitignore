@@ -1,5 +1,5 @@
-﻿html
-!html/js
+﻿html/*.html
+
 html/js/libs
 
 # Created by https://www.gitignore.io/api/linux,sublime_text,node,vim,kate
