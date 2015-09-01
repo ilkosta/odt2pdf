@@ -129,7 +129,7 @@ macro_rules! required_param {
   );
       
       
-  ($name:ident, $ty:ty; rules [$( $rule:expr ),* ] ) => (
+  ($name:ident, $ty:ty, rules [$( $rule:expr ),* ] ) => (
     #[allow(non_camel_case_types)]
     struct $name;
 

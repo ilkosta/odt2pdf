@@ -132,7 +132,7 @@ fn start_server(args : &Args) {
   let mut chain_form_file = Chain::new(submit_form_file);
 
   required_param!(sha1sum, String);
-  required_param!(filename, params::File; rules [
+  required_param!(filename, params::File, rules [
     upload_checks::odt_extension 
   , upload_checks::correct_magic_number  
   , upload_checks::same_sha1sum_of_param_req]);
