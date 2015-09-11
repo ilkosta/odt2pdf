@@ -12,7 +12,7 @@ macro_rules! hash_file {
       let mut data: Vec<u8> = Vec::new();
 
       match f.read_to_end(&mut data) {
-        Err(why) => { println!("Error reading the passed file to calculate the hash: {}", why); String::new() }
+        Err(why) => { error!("Error reading the passed file to calculate the hash: {}", why); String::new() }
         Ok(size) => {
           if size > 0 {
             digest.input(&data);

@@ -6,6 +6,15 @@ use rustc_serialize::json::{self};
 
 #[allow(dead_code)]
 #[derive(RustcDecodable)]
+pub struct Configuration {
+  pub transformation: TransformationConf,
+  pub file: FileConf,
+  pub clean: CleanConf,
+  pub logger: LoggerConf
+}
+
+#[allow(dead_code)]
+#[derive(RustcDecodable)]
 pub struct TransformationConf {
   pub cmd : String,
   pub error_dir: String
@@ -18,11 +27,25 @@ pub struct FileConf {
   pub accepted_types: Vec<String>
 }
 
+
+
 #[derive(RustcDecodable)]
-pub struct Configuration {
-  pub transformation: TransformationConf,
-  pub file: FileConf
+pub struct CleanConf {
+  pub converted: CleanConvertedConf
 }
+
+#[derive(RustcDecodable)]
+pub struct CleanConvertedConf {
+  pub cmd: String
+}
+
+#[derive(RustcDecodable)]
+pub struct LoggerConf {
+  pub output: String,
+  pub level: String
+}
+
+
 
 
 pub fn get_config() -> Configuration {
@@ -36,6 +59,16 @@ pub fn get_config() -> Configuration {
     "file" : {
       "cmd" : "file -b --mime-type {file}",
       "accepted_types": ["application/vnd.oasis.opendocument.text\n", "application/zip\n"]
+    },
+    
+    "clean" : {
+    "converted" : {
+      "cmd" : "nice -n 20 rm -r {working_dir}"
+    },
+  
+    "logger" : {
+      "output" : "output.log",
+      "level" : "info"
     }
     
   }"#.to_owned();

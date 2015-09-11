@@ -1,8 +1,4 @@
-﻿#![feature(plugin)]
-
-#![plugin(clippy)]
-
-#[macro_use]
+﻿#[macro_use]
 extern crate log;
 extern crate fern;
 
@@ -37,6 +33,7 @@ mod hash;
 
 #[macro_use]
 mod config;
+
 
 #[macro_use]
 mod io_err2http_err;
@@ -74,7 +71,7 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
       Ok(Response::with((status, format!("failed to elaborate the received file: {}", why))))
     },
     Ok(_) => {
-      println!("elaborating the file {}", file_path);
+      info!("elaborating the file {}", file_path);
       
       let conf = config::get_config();
 
@@ -84,7 +81,7 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
       let cmd_name = cmd_name.replace("{working_dir}", &working_dir);
       let cmd_name = cmd_name.replace("{file}", &file_path);
 
-      println!("cmd: {}", cmd_name);
+      info!("cmd: {}", cmd_name);
 
       let mut cmd_args: Vec<&str> = cmd_name.split_whitespace()
                                         .collect();
@@ -94,7 +91,6 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
                         .args(&cmd_args)
                         .status()
                         .unwrap_or_else(|e| {
-                          println!("failed to execute process: {}", e);
                           panic!("failed to execute process: {}", e);
                         });
 
@@ -103,7 +99,20 @@ fn submit_form_file(req: &mut Request) -> IronResult<Response> {
       if res.success() {
         let ref result_file_path = format!("{}.pdf" , file_param.path().display());
         debug!("file_path: {}", result_file_path);
-        return Ok(Response::with((status::Ok, Path::new(result_file_path))))
+        let response = Ok(Response::with((status::Ok, Path::new(result_file_path))));
+        
+        
+        // clean converted
+        let cmd_name = conf.clean.converted.cmd;
+        let cmd_name = cmd_name.replace("{working_dir}", &working_dir);
+        let mut cmd_args: Vec<&str> = cmd_name.split_whitespace()
+                                              .collect();
+        
+        Command::new(cmd_args.remove(0)).args(&cmd_args).spawn().unwrap_or_else(|e| {
+          panic!("failed to execute process: {}", e);          
+        });
+        debug!("removed {}", &working_dir);
+        return response
       }
       else {
         // copy the file in an error dirctory for further investigations
