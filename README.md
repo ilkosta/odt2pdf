@@ -1,13 +1,11 @@
 # odt2pdf
 webservice REST to convert odt documents to pdf
 
-# don't use it!
-
 The software is only a learning test for my knowledge of rust and it's ecosystem.
 
 It's the first rust project that I've created to test my learning.
 
-Consider it **pre-alpha quality**.
+Consider it **pre-alpha quality**... but for someone it work
 
 ## dependencies
 
